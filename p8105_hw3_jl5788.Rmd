@@ -1,13 +1,58 @@
 ---
-title: "p8105_hw1_jl5788"
+title: "p8105_hw3_jl5788"
 author: "Jie Liu"
-date: "9/26/2021"
+date: "10/18/2021"
 output: github_document
 ---
 
+
 # Problem 1
 
-d
+```{r,include=FALSE}
+library(tidyverse)
+library(p8105.datasets)
+```
+
+```{r}
+data("instacart")
+instacart =
+  instacart %>% 
+  as_tibble(instacart)
+```
+
+#### General Description of Dataset
+
+This dataset contains `r nrow(instacart)` rows and `r ncol(instacart)` columns, with each row representing a product from an instacart order. Total 15 Variables include identifier for order, product, user and aisle. The dataset includes name-specific variables like the name of the department(e.g. daily eggs, produce), aisle(e.g. yogurt, fresh vegetables) and product(e.g. Bulgarian Yogurt, Asparagus). Besides, there are some order-level variables, describing the order sequence number for one user, the day of the week on which the order was placed and the hour of the day on which the order was placed.The dataset also contains a variable (named "reordered") describing that whether the product has been ordered by this user in the past.
+
+In total, there are `r instacart %>% select(product_name) %>% distinct %>% count` kind of products from `r instacart %>% select(order_id) %>% distinct %>% count` orders by `r instacart %>% select(user_id) %>% distinct %>% count` users.
+
+#### Below is a 134 x 2 tibble showing the number of items ordered from aisle and sorting in descending order
+
+There are 134 aisles, with fresh vegetables ranking No.1 of the items ordered.
+```{r}
+instacart %>% 
+  count(aisle) %>% 
+  arrange(desc(n))
+
+```
+
+
+#### Below is a plot that shows the number of items ordered in each aisle(items whose number is <=10000 are excluded)
+
+```{r}
+instacart %>% 
+  count(aisle) %>% 
+  filter(n>10000) %>% 
+  mutate(aisle=fct_reorder(aisle,n)) %>% 
+  arrange(desc(n)) %>% 
+  ggplot(aes(x = aisle, y = n)) + geom_point() +labs(x = "Aisle",y= "Number",title = "Number of items ardered in each aisle") + theme(axis.text.x = element_text(angle = 50, hjust = 1.2))
+```
+
+#### Below is a table showing the three most poplular items in each of the aisles "baking ingredients”, “dog food care”, and “packaged vegetables fruits”.
+```{r}
+
+```
+
 
 
 
