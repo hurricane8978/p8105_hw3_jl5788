@@ -85,7 +85,7 @@ brfss =
   janitor::clean_names() %>% 
   filter(topic %in% c("Overall Health")) %>% 
   filter(response %in% c("Excellent", "Poor","Very good", "Good","Fair")) %>% 
-  mutate(response = factor(response, levels = c("Poor", "Fair", "Good", "Very good", "Excellent")))
+  mutate(response = fct_relevel(response, c("Poor", "Fair", "Good", "Very good", "Excellent")))
   
 ```
 #### In 2002, which states were observed at 7 or more locations? What about in 2010?
@@ -118,7 +118,40 @@ Excellent_dataset =
   group_by(locationabbr,locationdesc) %>% 
   mutate(mean=mean(data_value)) %>% 
   select(response,year,locationabbr,locationdesc,mean) 
+
+excell_df =
+  brfss %>% 
+  filter(response == "Excellent") %>% 
+  select(year, locationabbr, data_value) %>% 
+  group_by(year, locationabbr) %>% 
+  summarize(mean = mean(data_value))
   
+excell_df %>% 
+  group_by(locationabbr) %>% 
+  ggplot(aes(x = year, y = mean, color = locationabbr)) +
+  geom_line(alpha = 0.5) +
+  labs(
+    title = "The mean data value of state vs year",
+    y = "Mean data value", 
+    x = "Year",
+  ) +
+  scale_colour_hue("State abb") +
+  theme(legend.key.size = unit(0.02,'cm')) +
+  theme(legend.key.width = unit(0.05,'cm'))
+
+```
+
+#### Make a two-panel plot showing
+```{r}
+brfss %>%
+  filter(locationabbr == "NY", year %in% c(2006, 2010)) %>%
+  ggplot(aes(x = data_value, color = as.character(year))) +
+  geom_density() +
+  facet_grid(. ~ year) + 
+  labs(title = "Distribution of data value of responses for 2006 and 2010 in NY State",
+       x = "Data value of responses",
+       y = "Density of data value")
+
 ```
 
 
@@ -126,7 +159,7 @@ Excellent_dataset =
 
 #### Load,tidy,and otherwise wrangle the data
 
-```{r,eval=FALSE}
+```{r}
 accelerometer_df=
   read_csv("data/accel_data.csv") %>% 
   janitor::clean_names() %>% 
@@ -135,9 +168,52 @@ accelerometer_df=
     names_to = "minute",
     names_prefix = "activity_",
     values_to = "activity_count") %>% 
-  mutate(minute=as.numeric(minute),day=factor(day),day=fct_relevel(day,"Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"))
+  mutate(minute=as.numeric(minute),day=factor(day),day=fct_relevel(day,"Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"),weekend=as.numeric(day%in% c("Saturday","Sunday")),weekend=recode(weekend,'1'="weekend",'0'="weekday")) 
+
+
+accelerometer_df=
+  read_csv("data/accel_data.csv") %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(
+    activity_1:activity_1440,
+    names_to = "minute",
+    names_prefix = "activity_",
+    values_to = "activity_count") %>% 
+  mutate(minute=as.numeric(minute),day=factor(day),day=fct_relevel(day,"Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"),weekend=as.numeric(day))
 ```
-This dataset concerning  accelerometer data collected on a 63 year-old male with BMI 25 has `r nrow(accelerometer_df)` rows and `r ncol(accelerometer_df)` columns
+This cleaned dataset concerning  accelerometer data collected on a 63 year-old male with BMI 25 has `r nrow(accelerometer_df)` rows and `r ncol(accelerometer_df)` columns.Altogether,it has 5 variables,which are week,day,minute and activity counts.
+
+
+#### Table of activity number in specific day and week 
+
+AS shown in dataframe and table beblow,from the first week to the forth week, every Sunday's activity keeps decreasing. However, in other day of 4 weeks, it is hard to find any trend and establish connection between time and activity number. Besides, two saturdays's activity data are extremely unusual and much lower than other data, which could be resulted from data collection error.
+
+```{r}
+accelerometer_df %>% 
+  group_by(day,week) %>% 
+  summarize(total_act=sum(activity_count)) %>% 
+  pivot_wider(
+    names_from = day,
+    values_from = total_act) %>% 
+  select(week,Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday) %>% 
+  knitr::kable()
+```
+
+#### Graphic of 24-hour activity over the course of the day
+
+```{r}
+accelerometer_df %>% 
+  ggplot(aes(x=minute,y=activity_count,group=day_id,color=day))+
+  geom_line(alpha=.3)+
+  geom_smooth(aes(group = day), se =FALSE)+
+  labs(title = "24_Hour Activity Over the Course of the Day" ,x= "Time", y="Activity Count") +
+  scale_x_continuous(
+    breaks = c(seq(from=0,to=1440,by=120)),
+    labels = c(seq(from=0,to=1440,by=120))
+  )
+```
+
+As shown in the plot, at the weekend, people tend to engage in the activity in the morning.On Friday, during the time before midnight, activity count are higher than other time,which means people are more likely to engage in the activity during the time before midnight on Friday. Compared those seven curves, it seems no other special conclusion could been drawn based on information provided. 
 
 
 
